@@ -5,7 +5,7 @@ import pygame, time, random
 
 class Particle(pygame.sprite.Sprite):
 	"""A simple particle"""
-	gravity = 2
+	gravity = 1.5
 	def __init__(self, data, image, topleft, avgLifeSpan, velocity, obeysGravity):
 		"""obeysGravity: 0 is no gravity, 1 is falling particle, -1 is upward floating particle"""
 		pygame.sprite.Sprite.__init__(self)
@@ -40,15 +40,52 @@ class Particle(pygame.sprite.Sprite):
 
 class SmokeSpawner(pygame.sprite.Sprite):
 	"""A particle spawner for smoke"""
-	def __init__(self, data, topleft):
+	def __init__(self, data, topleft, intensity, lifespan=None):
 		pygame.sprite.Sprite.__init__(self)
 		self.add(data.particleSpawners)
 
 		self.sourceCoords = topleft
-		self.image = data.loadImage('assets/particles/smoke.png')
-		self.lifespan = 0.2
+		smokeImage = data.loadImage('assets/particles/smoke.png')
+		self.particleLifespan = 0.2
+		self.intensity = intensity
+		self.lifespan = lifespan
+		self.birthTime = time.time()
+
+		self.imgs = []
+		for degrees in [0, 90, 180, 270]:
+			self.imgs.append(pygame.transform.rotate(smokeImage, degrees))
 
 
 	def update(self, data):
-		if random.randint(0, 10) == 0:
-			Particle(data, self.image, self.sourceCoords, self.lifespan, (random.randint(-10, 10), random.randint(-10, 10)), -1)
+		if random.randint(0, self.intensity) == 0:
+			Particle(data, random.choice(self.imgs), self.sourceCoords, self.particleLifespan, 
+					 (random.randint(-10, 10), random.randint(-10, 10)), -1)
+		if self.lifespan is not None and time.time() - self.birthTime > self.lifespan:
+			self.kill()
+
+
+class Explosion(pygame.sprite.Sprite):
+	lifespan = 0.1
+	def __init__(self, data, topleft, intensity):
+		pygame.sprite.Sprite.__init__(self)
+		self.add(data.particleSpawners)
+
+		self.sourceCoords = topleft
+		fireImage = data.loadImage('assets/particles/explosion.png')
+		self.particleLifespan = 0.2
+		self.birthTime = time.time()
+		self.intensity = intensity
+
+		SmokeSpawner(data, topleft, 1, 1.05)
+
+		self.imgs = []
+		for degrees in [0, 90, 180, 270]:
+			self.imgs.append(pygame.transform.rotate(fireImage, degrees))
+
+
+	def update(self, data):
+		if time.time() - self.birthTime > Explosion.lifespan:
+			self.kill()
+		for i in range(self.intensity):
+			Particle(data, random.choice(self.imgs), self.sourceCoords, self.particleLifespan, 
+										 (random.randint(-10, 10), random.randint(-10, 10)), -1)

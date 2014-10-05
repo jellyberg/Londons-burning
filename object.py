@@ -2,7 +2,7 @@
 # a game by Adam Binks
 
 import pygame, random, time
-from particle import SmokeSpawner
+from particle import SmokeSpawner, Explosion
 
 class Building(pygame.sprite.Sprite):
 	"""A static object that falls over then disappears when bombed"""
@@ -60,6 +60,8 @@ class Bomber(pygame.sprite.Sprite):
 		self.rect = self.imageR.get_rect()
 		self.targetingRect = pygame.Rect((0, 0), (6, 10)) # BOMB SIZE
 
+		self.smoke = SmokeSpawner(data, self.rect.topleft, 10)
+
 		if startAtLeft:
 			self.direction = 'right'
 			self.image = self.imageR
@@ -72,8 +74,12 @@ class Bomber(pygame.sprite.Sprite):
 
 
 	def update(self, data):
-		if self.direction == 'right': dirMultiplier = 1
-		else: dirMultiplier =  -1
+		if self.direction == 'right':
+			dirMultiplier = 1
+			self.smoke.sourceCoords = self.rect.midleft
+		else:
+			dirMultiplier =  -1
+			self.smoke.sourceCoords = self.rect.midright
 
 		if self.rect.left > data.WINDOWWIDTH + 1:
 			self.direction = 'left'
@@ -85,6 +91,8 @@ class Bomber(pygame.sprite.Sprite):
 		self.coords[0] += Bomber.speed * data.dt * dirMultiplier
 		self.coords[1] += random.uniform(-0.2, 0.2)
 		self.rect.topleft = self.coords
+
+		self.smoke.update(data)
 
 		if time.time() - self.lastBombDropTime > self.timeTillBombPrimed:
 			self.bomb(data)
@@ -123,7 +131,7 @@ class Bomb(pygame.sprite.Sprite):
 		self.rect = self.baseImage.get_rect(topleft=topleft)
 		self.yCoord = topleft[1] # float for accuracy
 
-		self.smoke = SmokeSpawner(data, self.rect.midtop)
+		self.smoke = SmokeSpawner(data, self.rect.midtop, 2)
 
 
 	def update(self, data):
@@ -150,10 +158,11 @@ class Bomb(pygame.sprite.Sprite):
 		if collided:
 			collided.isBombed(data)
 		if collided or self.rect.bottom > data.WINDOWHEIGHT:
-			self.explode()
+			self.explode(data)
 
 
-	def explode(self):
+	def explode(self, data):
 		# TODO
 		self.kill()
 		self.smoke.kill()
+		Explosion(data, self.rect.center, 40)
