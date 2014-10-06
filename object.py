@@ -3,9 +3,12 @@
 
 import pygame, random, time
 from particle import SmokeSpawner, Explosion
+from random import randint
 
 class Building(pygame.sprite.Sprite):
 	"""A static object that falls over then disappears when bombed"""
+	rotateAccel = 3  # rotation acceleration when bombed
+	fallAccel = 4 # falling acceleration when bombed
 	def __init__(self, data, image, xCoord):
 		pygame.sprite.Sprite.__init__(self)
 		self.add(data.buildings)
@@ -19,6 +22,10 @@ class Building(pygame.sprite.Sprite):
 		self.rect.bottom = data.WINDOWHEIGHT
 
 		self.state = 'stable'
+		self.rotation = 0.0 # current rotation amount
+		self.rotationSpeed = 0 # rotation velocity
+		self.rotationDirection = random.choice([1, -1]) # randomly fall left or right
+		self.fallSpeed = 0 # current fall speed
 
 
 	def update(self, data):
@@ -30,12 +37,26 @@ class Building(pygame.sprite.Sprite):
 
 
 	def updateFallAnimation(self, data):
-		isDone = True
+		"""Fall over: rotate and move down"""
+		if -80 < self.rotation < 80:
+			self.rotationSpeed += Building.rotateAccel * data.dt
+			self.rotation += self.rotationSpeed * data.dt
+			self.image = pygame.transform.rotate(self.baseImage, self.rotation * self.rotationDirection)
+
+			self.fallSpeed += Building.fallAccel * data.dt
+			self.rect.y += self.fallSpeed * data.dt
+
+			isDone = False
+		else:
+			isDone = True
 		return isDone
 
 
 	def isBombed(self, data):
 		self.state = 'bombed'
+		SmokeSpawner(data, (self.rect.midbottom), randint(5, 9), 3) # smoke for the wreckage
+		if randint(0, 3) == 0:  # sometimes add another smoke spawner randomly
+			SmokeSpawner(data, (self.rect.x + randint(5, self.rect.width - 6), self.rect.bottom), randint(3, 5), 2)
 		self.remove(data.standingBuildings)
 
 
