@@ -4,6 +4,117 @@
 import pygame, random, time
 from particle import SmokeSpawner, Explosion
 from random import randint
+from math import atan2, degrees, pi, cos, sin, fabs
+
+
+class AAGun(pygame.sprite.Sprite):
+	bulletShootInterval = 0.3
+	def __init__(self, data, xPos):
+		pygame.sprite.Sprite.__init__(self)
+		self.add(data.AAguns)
+		self.add(data.destroyableEntities)
+		self.add(data.bomberTargetedEntities)
+
+		self.startImage = data.loadImage('assets/defences/AAgunBase.png')
+		self.baseImage = self.startImage
+		self.barrelImage = data.loadImage('assets/defences/AAgunBarrel.png')
+
+		self.rect = self.baseImage.get_rect()
+		self.rect.bottomleft = (xPos, data.WINDOWHEIGHT)
+
+		# SET UP A LIST OF ROTATED BARREL IMAGES SO ROTATION DOESN'T NEED TO BE DONE AT RUNTIME
+		# also set up a rects that correspond with each image, aligned so the barrel is properly positioned
+		self.rotatedBarrelImgs = []
+		self.rotatedBarrelRects = []
+		i = 0
+		for degs in range(270, 360): # _ ... \ ... |
+			self.rotatedBarrelImgs.append(pygame.transform.rotate(self.barrelImage, degs))
+
+			rect = self.rotatedBarrelImgs[i].get_rect()
+			rect.bottomleft = (self.rect.centerx - 8, self.rect.centery + 6)
+			self.rotatedBarrelRects.append(rect)
+			i += 1
+
+		for degs in range(0, 90): # | ... / ... _
+			self.rotatedBarrelImgs.append(pygame.transform.rotate(self.barrelImage, degs))
+
+			rect = self.rotatedBarrelImgs[i].get_rect()
+			rect.bottomright = (self.rect.centerx + 8, self.rect.centery + 6)
+			self.rotatedBarrelRects.append(rect)
+			i += 1
+
+		self.state = 'stable'
+		self.rotation = 0.0 # current rotation amount
+		self.rotationSpeed = 0 # rotation velocity
+		self.rotationDirection = random.choice([1, -1]) # randomly fall left or right
+		self.fallSpeed = 0 # current fall speed
+
+		self.lastBulletShootTime = time.time()
+
+		self.barrelRot = 0
+
+
+	def update(self, data):
+		if self.state == 'bombed':
+			self.updateFallAnimation(data)
+
+		elif self.state == 'stable':
+			self.barrelRot = self.getBarrelRotation(data)
+			if self.barrelRot > 169: self.barrelRot = 169
+
+			data.screen.blit(self.rotatedBarrelImgs[self.barrelRot], self.rotatedBarrelRects[self.barrelRot])
+
+			if data.input.mousePressed == 1 and time.time() - self.lastBulletShootTime > AAGun.bulletShootInterval: # LMB clicked
+				Bullet(data, self.rect.midtop, self.getBulletVelocity(self.barrelRot))
+
+		data.screen.blit(self.baseImage, self.rect)
+
+
+	def getBarrelRotation(self, data):
+		"""Returns the degrees of rotation that will point the barrel towards the mouse pos"""
+		x1, y1 = data.input.mousePos
+		x2, y2 = (self.rect.centerx, self.rect.centery + 6)
+		#Angle logic
+		dx = x1 - x2
+		dy = y1 - y2
+		rads = atan2(-dy,dx)
+		rads %= 2*pi
+		degs = degrees(rads)
+		return int(degs)
+
+
+	def getBulletVelocity(self, angle):
+		"""Returns the correct velocity to send a bullet at the given angle"""
+		# make the angle correct
+		angle = fabs(angle - 180)
+		print 'Angle: %s, velocity: %s' %(angle, str((cos(angle), -sin(angle))))
+		return (cos(angle), -sin(angle))
+
+
+
+	def updateFallAnimation(self, data):
+		"""Fall over: rotate and move down"""
+		if -80 < self.rotation < 80:
+			self.rotationSpeed += Building.rotateAccel * data.dt
+			self.rotation += self.rotationSpeed * data.dt
+			self.baseImage = pygame.transform.rotate(self.startImage, self.rotation * self.rotationDirection)
+
+			self.fallSpeed += Building.fallAccel * data.dt
+			self.rect.y += self.fallSpeed * data.dt
+
+			isDone = False
+		else:
+			isDone = True
+		return isDone
+
+
+	def isBombed(self, data):
+		self.state = 'bombed'
+		SmokeSpawner(data, (self.rect.midbottom), randint(5, 9), 3) # smoke for the wreckage
+		if randint(0, 3) == 0:  # sometimes add another smoke spawner randomly
+			SmokeSpawner(data, (self.rect.x + randint(5, self.rect.width - 6), self.rect.bottom), randint(3, 5), 2)
+
+
 
 class Building(pygame.sprite.Sprite):
 	"""A static object that falls over then disappears when bombed"""
@@ -14,6 +125,7 @@ class Building(pygame.sprite.Sprite):
 		self.add(data.buildings)
 		self.add(data.standingBuildings)
 		self.add(data.destroyableEntities)
+		self.add(data.bomberTargetedEntities)
 
 		self.baseImage = image
 		self.image = image
@@ -134,7 +246,7 @@ class Bomber(pygame.sprite.Sprite):
 		"""Checks if there is a building below the plane. CURRENTLY UNUSED"""
 		self.targetingRect.bottom = data.WINDOWHEIGHT
 		self.targetingRect.centerx = self.rect.centerx
-		for building in data.standingBuildings:
+		for building in data.bomberTargetedEntities:
 			if self.targetingRect.colliderect(building.rect):
 				return True
 
@@ -177,7 +289,7 @@ class Bomb(pygame.sprite.Sprite):
 	def checkForCollisions(self, data):
 		collided = pygame.sprite.spritecollideany(self, data.destroyableEntities)
 		if collided:
-			collided.isBombed(data)
+			collided.isBombed(data)  # tell the entity it has been bombed
 		if collided or self.rect.bottom > data.WINDOWHEIGHT:
 			self.explode(data)
 
@@ -187,3 +299,31 @@ class Bomb(pygame.sprite.Sprite):
 		self.kill()
 		self.smoke.kill()
 		Explosion(data, self.rect.center, 40)
+
+
+
+class Bullet(pygame.sprite.Sprite):
+	"""A fast moving projectile that detonates bombs it comes into contact with"""
+	speed = 10.0
+	def __init__(self, data, pos, velocity):
+		pygame.sprite.Sprite.__init__(self)
+		self.add(data.bullets)
+		self.add(data.destroyableEntities)  # explode bombs it comes into contact with
+
+		self.image = data.loadImage('assets/defences/bullet.png')
+		self.rect = self.image.get_rect()
+		self.rect.center = pos
+		self.coords = [float(self.rect.left), float(self.rect.top)]
+		self.velocity = velocity
+
+
+	def update(self, data):
+		self.coords[0] += self.velocity[0] * Bullet.speed# * data.dt
+		self.coords[1] += self.velocity[1] * Bullet.speed# * data.dt
+		self.rect.topleft = self.coords
+
+		data.screen.blit(self.image, self.rect)
+
+
+	def isBombed(self, data):
+		self.kill()

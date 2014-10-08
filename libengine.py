@@ -45,6 +45,7 @@ class Data:
 
 	def newGame(self):
 		self.destroyableEntities = pygame.sprite.Group() # any objects destroyable by bombs
+		self.bomberTargetedEntities = pygame.sprite.Group()  # any objects that bombers will try and drop bombs on
 
 		self.particles = pygame.sprite.Group()
 		self.particleSpawners = pygame.sprite.Group()
@@ -54,6 +55,9 @@ class Data:
 
 		self.bombers = pygame.sprite.Group()
 		self.bombs = pygame.sprite.Group()
+
+		self.AAguns = pygame.sprite.Group()
+		self.bullets = pygame.sprite.Group()
 
 
 	def loadImage(self, imagePath):
