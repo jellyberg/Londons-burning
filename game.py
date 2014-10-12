@@ -11,7 +11,7 @@ class GameHandler:
 
 
 	def update(self, data, dt):
-		data.screen.fill((60, 60, 60))
+		data.gameSurf.fill((60, 60, 60))
 
 		data.buildings.update(data)
 		
@@ -27,6 +27,9 @@ class GameHandler:
 
 		data.bombers.update(data)
 		data.bombs.update(data)
+
+		data.screen.blit(data.gameSurf, (data.screenShakeOffset[0], data.screenShakeOffset[1]))
+		data.updateScreenshake()
 
 
 

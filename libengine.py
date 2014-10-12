@@ -1,7 +1,7 @@
 # 
 # a game by Adam Binks
 
-import pygame, input, game
+import pygame, input, game, random
 
 def run():
 	stateHandler = StateHandler()
@@ -42,8 +42,13 @@ class Data:
 
 		self.IMAGESCALEUP = 4
 
+		self.screenShakeOffset = [0, 0]
+
 
 	def newGame(self):
+		self.gameSurf = pygame.Surface((self.WINDOWWIDTH, self.WINDOWHEIGHT))
+		self.gameSurf.convert()
+
 		self.destroyableEntities = pygame.sprite.Group() # any objects destroyable by bombs
 		self.bomberTargetedEntities = pygame.sprite.Group()  # any objects that bombers will try and drop bombs on
 
@@ -58,6 +63,18 @@ class Data:
 
 		self.AAguns = pygame.sprite.Group()
 		self.bullets = pygame.sprite.Group()
+
+
+	def shakeScreen(self, intensity):
+		"""Gives a screenshake effect - for the next few frames the gameSurf will be blitted at an offset"""
+		for axis in (0, 1):
+			self.screenShakeOffset[axis] += random.choice([-1.0 * intensity, 1.0 * intensity])
+
+
+	def updateScreenshake(self):
+		"""Begins to return the screenShakeOffset to [0, 0] frame by frame"""
+		for axis in (0, 1):
+			self.screenShakeOffset[axis] -= self.screenShakeOffset[axis] * 0.5 * self.dt
 
 
 	def loadImage(self, imagePath):

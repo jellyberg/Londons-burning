@@ -32,7 +32,7 @@ class Particle(pygame.sprite.Sprite):
 
 		self.rect.topleft = self.coords
 
-		data.screen.blit(self.image, self.rect)
+		data.gameSurf.blit(self.image, self.rect)
 		if time.time() - self.birthTime > self.lifeTime:
 			self.kill()
 

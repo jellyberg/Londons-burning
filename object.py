@@ -62,33 +62,26 @@ class AAGun(pygame.sprite.Sprite):
 			self.barrelRot = self.getBarrelRotation(data)
 			if self.barrelRot > 169: self.barrelRot = 169
 
-			data.screen.blit(self.rotatedBarrelImgs[self.barrelRot], self.rotatedBarrelRects[self.barrelRot])
+			data.gameSurf.blit(self.rotatedBarrelImgs[self.barrelRot], self.rotatedBarrelRects[self.barrelRot])
 
 			if data.input.mousePressed == 1 and time.time() - self.lastBulletShootTime > AAGun.bulletShootInterval: # LMB clicked
-				Bullet(data, self.rect.midtop, self.getBulletVelocity(self.barrelRot))
+				Bullet(data, (self.rect.centerx, self.rect.centery + 6), data.input.mousePos)
+				self.lastBulletShootTime = time.time()
 
-		data.screen.blit(self.baseImage, self.rect)
+		data.gameSurf.blit(self.baseImage, self.rect)
 
 
 	def getBarrelRotation(self, data):
 		"""Returns the degrees of rotation that will point the barrel towards the mouse pos"""
 		x1, y1 = data.input.mousePos
 		x2, y2 = (self.rect.centerx, self.rect.centery + 6)
-		#Angle logic
+		# angle logic
 		dx = x1 - x2
 		dy = y1 - y2
 		rads = atan2(-dy,dx)
 		rads %= 2*pi
 		degs = degrees(rads)
 		return int(degs)
-
-
-	def getBulletVelocity(self, angle):
-		"""Returns the correct velocity to send a bullet at the given angle"""
-		# make the angle correct
-		angle = fabs(angle - 180)
-		print 'Angle: %s, velocity: %s' %(angle, str((cos(angle), -sin(angle))))
-		return (cos(angle), -sin(angle))
 
 
 
@@ -145,7 +138,7 @@ class Building(pygame.sprite.Sprite):
 			animIsDone = self.updateFallAnimation(data)
 			if animIsDone:
 				self.kill()
-		data.screen.blit(self.image, self.rect)
+		data.gameSurf.blit(self.image, self.rect)
 
 
 	def updateFallAnimation(self, data):
@@ -230,7 +223,7 @@ class Bomber(pygame.sprite.Sprite):
 		if time.time() - self.lastBombDropTime > self.timeTillBombPrimed:
 			self.bomb(data)
 
-		data.screen.blit(self.image, self.rect)
+		data.gameSurf.blit(self.image, self.rect)
 
 
 	def bomb(self, data):
@@ -283,7 +276,7 @@ class Bomb(pygame.sprite.Sprite):
 
 		self.smoke.sourceCoords = [self.rect.centerx - 2, self.rect.top - 2]
 
-		data.screen.blit(self.image, self.rect)
+		data.gameSurf.blit(self.image, self.rect)
 
 
 	def checkForCollisions(self, data):
@@ -295,34 +288,48 @@ class Bomb(pygame.sprite.Sprite):
 
 
 	def explode(self, data):
-		# TODO
 		self.kill()
 		self.smoke.kill()
 		Explosion(data, self.rect.center, 40)
+		data.shakeScreen(10)
 
 
 
 class Bullet(pygame.sprite.Sprite):
 	"""A fast moving projectile that detonates bombs it comes into contact with"""
-	speed = 10.0
-	def __init__(self, data, pos, velocity):
+	speed = 70.0
+	def __init__(self, data, pos, aimAt):
 		pygame.sprite.Sprite.__init__(self)
 		self.add(data.bullets)
 		self.add(data.destroyableEntities)  # explode bombs it comes into contact with
 
 		self.image = data.loadImage('assets/defences/bullet.png')
-		self.rect = self.image.get_rect()
-		self.rect.center = pos
-		self.coords = [float(self.rect.left), float(self.rect.top)]
-		self.velocity = velocity
+		self.rect = self.image.get_rect(center=pos)
+		self.coords = [float(self.rect.centerx), float(self.rect.centery)]
+		self.angle = self.get_angle(pos, aimAt)
 
 
 	def update(self, data):
-		self.coords[0] += self.velocity[0] * Bullet.speed# * data.dt
-		self.coords[1] += self.velocity[1] * Bullet.speed# * data.dt
-		self.rect.topleft = self.coords
+		self.coords = self.project(self.coords, self.angle, Bullet.speed * data.dt)
+		self.rect.center = self.coords
 
-		data.screen.blit(self.image, self.rect)
+		data.gameSurf.blit(self.image, self.rect)
+
+
+	def project(self, pos, angle, distance):
+		"""Returns tuple of pos projected distance at angle adjusted for pygame's y-axis."""
+		return (pos[0] + (cos(angle) * distance), pos[1] - (sin(angle) * distance))
+
+
+	def get_angle(self, origin, destination):
+		"""Returns angle in radians from origin to destination.
+		This is the angle that you would get if the points were
+		on a cartesian grid. Arguments of (0,0), (1, -1)
+		return .25pi(45 deg) rather than 1.75pi(315 deg).
+		"""
+		x_dist = destination[0] - origin[0]
+		y_dist = destination[1] - origin[1]
+		return atan2(-y_dist, x_dist) % (2 * pi)
 
 
 	def isBombed(self, data):
