@@ -16,6 +16,8 @@ class StateHandler:
 		self.data.screen.fill((60, 60, 60))
 		pygame.display.set_caption('Blitz Defence')
 
+		pygame.mouse.set_cursor(*pygame.cursors.diamond)
+
 		self.gameHandler = game.GameHandler(self.data)
 
 
@@ -75,6 +77,8 @@ class Data:
 		"""Begins to return the screenShakeOffset to [0, 0] frame by frame"""
 		for axis in (0, 1):
 			self.screenShakeOffset[axis] -= self.screenShakeOffset[axis] * 0.5 * self.dt
+			if random.randint(0, 10) == 0:
+				self.screenShakeOffset[axis] = -self.screenShakeOffset[axis]
 
 
 	def loadImage(self, imagePath):

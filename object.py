@@ -1,7 +1,7 @@
 # 
 # a game by Adam Binks
 
-import pygame, random, time
+import pygame, random, time, math
 from particle import SmokeSpawner, Explosion
 from random import randint
 from math import atan2, degrees, pi, cos, sin, fabs
@@ -21,6 +21,8 @@ class AAGun(pygame.sprite.Sprite):
 
 		self.rect = self.baseImage.get_rect()
 		self.rect.bottomleft = (xPos, data.WINDOWHEIGHT)
+
+		self.barrelRecoil = 0.0
 
 		# SET UP A LIST OF ROTATED BARREL IMAGES SO ROTATION DOESN'T NEED TO BE DONE AT RUNTIME
 		# also set up a rects that correspond with each image, aligned so the barrel is properly positioned
@@ -62,11 +64,15 @@ class AAGun(pygame.sprite.Sprite):
 			self.barrelRot = self.getBarrelRotation(data)
 			if self.barrelRot > 169: self.barrelRot = 169
 
-			data.gameSurf.blit(self.rotatedBarrelImgs[self.barrelRot], self.rotatedBarrelRects[self.barrelRot])
+			data.gameSurf.blit(self.rotatedBarrelImgs[self.barrelRot], 
+							   self.rotatedBarrelRects[self.barrelRot].move(0, self.barrelRecoil))
+			if self.barrelRecoil > 0:
+				self.barrelRecoil -= (self.barrelRecoil * 0.5 * data.dt)
 
 			if data.input.mousePressed == 1 and time.time() - self.lastBulletShootTime > AAGun.bulletShootInterval: # LMB clicked
 				Bullet(data, (self.rect.centerx, self.rect.centery + 6), data.input.mousePos)
 				self.lastBulletShootTime = time.time()
+				self.barrelRecoil = 10
 
 		data.gameSurf.blit(self.baseImage, self.rect)
 
@@ -106,6 +112,7 @@ class AAGun(pygame.sprite.Sprite):
 		SmokeSpawner(data, (self.rect.midbottom), randint(5, 9), 3) # smoke for the wreckage
 		if randint(0, 3) == 0:  # sometimes add another smoke spawner randomly
 			SmokeSpawner(data, (self.rect.x + randint(5, self.rect.width - 6), self.rect.bottom), randint(3, 5), 2)
+		data.shakeScreen(30)
 
 
 
@@ -248,7 +255,7 @@ class Bomber(pygame.sprite.Sprite):
 class Bomb(pygame.sprite.Sprite):
 	"""A projectile that explodes on collision with other objects and detsroys them and itself in the process"""
 	fallSpeed = 18
-	def __init__(self, data, topleft):
+	def __init__(self, data, topleft, velocity=(0, fallSpeed)):
 		pygame.sprite.Sprite.__init__(self)
 		self.add(data.bombs)
 
@@ -280,18 +287,23 @@ class Bomb(pygame.sprite.Sprite):
 
 
 	def checkForCollisions(self, data):
+		shake = True
 		collided = pygame.sprite.spritecollideany(self, data.destroyableEntities)
 		if collided:
 			collided.isBombed(data)  # tell the entity it has been bombed
+			if collided in data.buildings:
+				data.shakeScreen(20)
+				shake = False
 		if collided or self.rect.bottom > data.WINDOWHEIGHT:
-			self.explode(data)
+			self.explode(data, shake)
 
 
-	def explode(self, data):
+	def explode(self, data, shake=True):
 		self.kill()
 		self.smoke.kill()
 		Explosion(data, self.rect.center, 40)
-		data.shakeScreen(10)
+		if shake:
+			data.shakeScreen(10)
 
 
 
@@ -312,6 +324,9 @@ class Bullet(pygame.sprite.Sprite):
 	def update(self, data):
 		self.coords = self.project(self.coords, self.angle, Bullet.speed * data.dt)
 		self.rect.center = self.coords
+
+		if self.rect.right < 0 or self.rect.left > data.WINDOWWIDTH or self.rect.bottom < 0:
+			self.kill()
 
 		data.gameSurf.blit(self.image, self.rect)
 
