@@ -1,13 +1,16 @@
 #
 # a game by Adam Binks
 
-import pygame, random
+import random, time
 from object import Building, Bomber, AAGun
 
 class GameHandler:
 	def __init__(self, data):
 		self.newGame(data)
-		self.timeTillNewBomber = 0
+		self.timeTillNewBomber = random.randint(5, 8) # longer time till second bomber to get into the swing of things
+		self.lastBomberTime = time.time()
+
+		Bomber(data, random.randint(0, 1), random.randint(50, 300))
 
 
 	def update(self, data, dt):
@@ -21,9 +24,10 @@ class GameHandler:
 		data.AAguns.update(data)
 		data.bullets.update(data)
 
-		if self.timeTillNewBomber <= 0:
+		if time.time() - self.lastBomberTime > self.timeTillNewBomber:
 			Bomber(data, random.randint(0, 1), random.randint(50, 300))
-			self.timeTillNewBomber = 1
+			self.timeTillNewBomber = random.randint(3, 7)
+			self.lastBomberTime = time.time()
 
 		data.bombers.update(data)
 		data.bombs.update(data)

@@ -4,7 +4,7 @@
 import pygame, random, time, math
 from particle import SmokeSpawner, Explosion
 from random import randint
-from math import atan2, degrees, pi, cos, sin, fabs
+from math import atan2, degrees, pi, cos, sin
 
 
 class AAGun(pygame.sprite.Sprite):
@@ -182,6 +182,7 @@ class Bomber(pygame.sprite.Sprite):
 	def __init__(self, data, startAtLeft, yPos):
 		pygame.sprite.Sprite.__init__(self)
 		self.add(data.bombers)
+		self.add(data.bulletproofEntities)
 
 		self.imageL = data.loadImage('assets/enemies/bomber.png')
 		self.imageR = pygame.transform.flip(self.imageL, 1, 0)
@@ -253,7 +254,7 @@ class Bomber(pygame.sprite.Sprite):
 
 
 class Bomb(pygame.sprite.Sprite):
-	"""A projectile that explodes on collision with other objects and detsroys them and itself in the process"""
+	"""A projectile that explodes on collision with other objects and destroys them and itself in the process"""
 	fallSpeed = 18
 	def __init__(self, data, topleft, velocity=(0, fallSpeed)):
 		pygame.sprite.Sprite.__init__(self)
@@ -325,6 +326,10 @@ class Bullet(pygame.sprite.Sprite):
 		self.coords = self.project(self.coords, self.angle, Bullet.speed * data.dt)
 		self.rect.center = self.coords
 
+		collided = pygame.sprite.spritecollideany(self, data.bulletproofEntities)
+		if collided:
+			self.angle = self.invertAngle(self.angle)
+
 		if self.rect.right < 0 or self.rect.left > data.WINDOWWIDTH or self.rect.bottom < 0:
 			self.kill()
 
@@ -345,6 +350,12 @@ class Bullet(pygame.sprite.Sprite):
 		x_dist = destination[0] - origin[0]
 		y_dist = destination[1] - origin[1]
 		return atan2(-y_dist, x_dist) % (2 * pi)
+
+
+	def invertAngle(self, angle):
+		"""Returns the inverted angle (like it has bounced off). Pass radians, returns in radians"""
+		degs = math.degrees(angle)
+		return math.radians(360 - degs)
 
 
 	def isBombed(self, data):
