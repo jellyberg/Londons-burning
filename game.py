@@ -2,23 +2,25 @@
 # a game by Adam Binks
 
 import random, time
-from object import Building, Bomber, AAGun, Bomb, SuperBomb
+from object import Building, Bomber, AAGun, Bomb, SuperBomb, Spotlight
 
 class GameHandler:
 	def __init__(self, data):
+		Bomb.baseImage = data.loadImage('assets/enemies/bomb.png')
+		SuperBomb.baseImage = data.loadImage('assets/enemies/superBomb.png')
+		Spotlight.baseImage = data.loadImage('assets/defences/spotlight.png')
+
 		self.newGame(data)
-		self.timeTillNewBomber = random.randint(5, 8) # longer time till second bomber to get into the swing of things
+		self.timeTillNewBomber = random.randint(15, 20) # longer time till second bomber to get into the swing of things
 		self.lastBomberTime = time.time()
 
 		Bomber(data, random.randint(0, 1), random.randint(50, 300))
-
-		Bomb.baseImage = data.loadImage('assets/enemies/bomb.png')
-		SuperBomb.baseImage = data.loadImage('assets/enemies/superBomb.png')
 
 
 	def update(self, data, dt):
 		data.gameSurf.fill((60, 60, 60))
 
+		data.spotlights.update(data)
 		data.buildings.update(data)
 		
 		data.particleSpawners.update(data)
@@ -28,8 +30,8 @@ class GameHandler:
 		data.bullets.update(data)
 
 		if time.time() - self.lastBomberTime > self.timeTillNewBomber or len(data.bombers) == 0:
-			Bomber(data, random.randint(0, 1), random.randint(50, 300))
-			self.timeTillNewBomber = random.randint(6, 10)
+			Bomber(data, random.randint(0, 1), random.randint(50, 250))
+			self.timeTillNewBomber = random.randint(10, 14)
 			self.lastBomberTime = time.time()
 
 		data.bombers.update(data)
@@ -43,6 +45,9 @@ class GameHandler:
 
 	def newGame(self, data):
 		data.newGame()
+
+		Spotlight(data, (200, data.WINDOWHEIGHT), 50)
+		Spotlight(data, (400, data.WINDOWHEIGHT), 130)
 
 		buildingImgs = []
 		for buildingFileName in ['tall1', 'tall2', 'small1', 'small2', 'small3', 'factory1']:

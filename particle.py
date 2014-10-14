@@ -1,7 +1,7 @@
 # 
 # a game by Adam Binks
 
-import pygame, time, random
+import pygame, time, random, sound
 
 class Particle(pygame.sprite.Sprite):
 	"""A simple particle"""
@@ -82,6 +82,8 @@ class Explosion(pygame.sprite.Sprite):
 		self.imgs = []
 		for degrees in [0, 90, 180, 270]:
 			self.imgs.append(pygame.transform.rotate(fireImage, degrees))
+
+		sound.play('explosion%s' %(random.randint(1, 4)))
 
 
 	def update(self, data):

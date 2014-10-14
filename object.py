@@ -1,7 +1,7 @@
 # 
 # a game by Adam Binks
 
-import pygame, random, time, math
+import pygame, random, time, math, sound
 from particle import SmokeSpawner, Explosion
 from random import randint
 from math import atan2, degrees, pi, cos, sin
@@ -202,12 +202,14 @@ class Bomber(pygame.sprite.Sprite):
 		if startAtLeft:
 			self.direction = 'right'
 			self.image = self.imageR
-			self.rect.topleft = (0, yPos)
+			self.rect.topright = (0, yPos)
 		else:
 			self.direction = 'left'
 			self.image = self.imageL
-			self.rect.topright = (data.WINDOWWIDTH, yPos)
+			self.rect.topleft = (data.WINDOWWIDTH, yPos)
 		self.coords = list(self.rect.topleft) # for more accurate positioning using floats
+
+		sound.play('swoosh', 0.3)
 
 
 	def update(self, data):
@@ -265,12 +267,14 @@ class Bomber(pygame.sprite.Sprite):
 		self.smoke.kill()
 		Explosion(data, self.rect.center, 60)
 		data.shakeScreen(20)
+		sound.play('shoot down')
+		pygame.time.wait(50)
 
 
 
 class Bomb(pygame.sprite.Sprite):
 	"""A projectile that explodes on collision with other objects and destroys them and itself in the process"""
-	fallSpeed = 18
+	fallSpeed = 15
 	def __init__(self, data, topleft, velocity=(0, fallSpeed)):
 		pygame.sprite.Sprite.__init__(self)
 		self.add(data.bombs)
@@ -320,6 +324,7 @@ class Bomb(pygame.sprite.Sprite):
 				if self.fallSpeed > 0:  # is falling
 					self.fallSpeed = -self.fallSpeed
 					self.baseImage = pygame.transform.rotate(self.baseImage, 180)
+					sound.play('plup', 0.8)
 				return
 
 		if collided or self.rect.bottom > data.WINDOWHEIGHT: # collided or touch bottom of screen
@@ -347,7 +352,7 @@ class Bomb(pygame.sprite.Sprite):
 
 class SuperBomb(Bomb):
 	"""A massive bomb that can be deflected by bullets and blow up bombers"""
-	fallSpeed = 14
+	fallSpeed = 12
 	def __init__(self, data, topleft):
 		Bomb.__init__(self, data, topleft)
 		self.add(data.superBombs)
@@ -370,6 +375,8 @@ class Bullet(pygame.sprite.Sprite):
 		self.coords = [float(self.rect.centerx), float(self.rect.centery)]
 		self.angle = self.get_angle(pos, aimAt)
 
+		sound.play('shoot%s' %(random.randint(1, 2)), 0.4)
+
 
 	def update(self, data):
 		self.coords = self.project(self.coords, self.angle, Bullet.speed * data.dt)
@@ -378,6 +385,7 @@ class Bullet(pygame.sprite.Sprite):
 		collided = pygame.sprite.spritecollideany(self, data.bulletproofEntities)
 		if collided:
 			self.angle = self.invertAngle(self.angle)
+			sound.play('pip')
 
 		if self.rect.right < 0 or self.rect.left > data.WINDOWWIDTH or self.rect.bottom < 0:
 			self.kill()
@@ -409,3 +417,35 @@ class Bullet(pygame.sprite.Sprite):
 
 	def isBombed(self, data):
 		self.kill()
+
+
+
+class Spotlight(pygame.sprite.Sprite):
+	"""Eye candy - a floodlight thing that sweeps across the sky"""
+	rotateSpeed = 2
+	def __init__(self, data, sourceCoords, startRotation):
+		pygame.sprite.Sprite.__init__(self)
+		self.add(data.spotlights)
+
+		self.rotation = startRotation
+		self.rotationDirection = 1
+		self.image = Spotlight.baseImage
+		self.sourceCoords = sourceCoords
+
+
+	def update(self, data):
+		self.rotation += Spotlight.rotateSpeed * self.rotationDirection * data.dt
+		if self.rotation < 45:
+			self.rotationDirection = 1
+		elif self.rotation > 135:
+			self.rotationDirection = -1
+
+		self.image = pygame.transform.rotate(Spotlight.baseImage, self.rotation)
+		self.rect = self.image.get_rect()
+
+		if self.rotation > 90:
+			self.rect.bottomright = (self.sourceCoords[0] + 20, self.sourceCoords[1])
+		elif self.rotation < 90:
+			self.rect.bottomleft = (self.sourceCoords[0] - 20, self.sourceCoords[1])
+
+		data.gameSurf.blit(self.image, self.rect)

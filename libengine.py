@@ -1,7 +1,9 @@
 # 
 # a game by Adam Binks
+import pygame
+pygame.mixer.pre_init(44100, -16, 2, 512)   # use a lower buffersize to reduce sound latency
 
-import pygame, input, game, random
+import input, game, random
 
 def run():
 	stateHandler = StateHandler()
@@ -48,6 +50,8 @@ class Data:
 
 
 	def newGame(self):
+		self.score = 0
+
 		self.gameSurf = pygame.Surface((self.WINDOWWIDTH, self.WINDOWHEIGHT))
 		self.gameSurf.convert()
 
@@ -68,6 +72,8 @@ class Data:
 
 		self.AAguns = pygame.sprite.Group()
 		self.bullets = pygame.sprite.Group()
+
+		self.spotlights = pygame.sprite.Group()
 
 
 	def shakeScreen(self, intensity):

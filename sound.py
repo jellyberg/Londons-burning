@@ -3,8 +3,12 @@
 
 import pygame, random
 
+pygame.init()
+	
 SOUND = {}
-for filename in []: # .wav files only
+for filename in ['explosion1', 'explosion2', 'explosion3', 'explosion4',
+				 'explosion5', 'hit', 'plup', 'shoot1', 'shoot2', 'pip',
+				 'swoosh', 'shoot down']: # .wav files only
 	SOUND[filename] = pygame.mixer.Sound('assets/sounds/%s.wav' %(filename))
 
 def play(sound, volume=0.8, varyVolume=True, loops=0):
