@@ -165,6 +165,7 @@ class Building(pygame.sprite.Sprite):
 
 
 	def isBombed(self, data):
+		pygame.time.wait(50)
 		self.state = 'bombed'
 		SmokeSpawner(data, (self.rect.midbottom), randint(5, 9), 3) # smoke for the wreckage
 		if randint(0, 3) == 0:  # sometimes add another smoke spawner randomly
@@ -178,11 +179,13 @@ class Bomber(pygame.sprite.Sprite):
 	minTimeToDropBomb = 0.6
 	maxTimeToDropBomb = 4
 	speed = 15
+	superBombFrequency = 5 # lower = higher chance of superbombs
 
 	def __init__(self, data, startAtLeft, yPos):
 		pygame.sprite.Sprite.__init__(self)
 		self.add(data.bombers)
 		self.add(data.bulletproofEntities)
+		self.add(data.superbombableEntities)
 
 		self.imageL = data.loadImage('assets/enemies/bomber.png')
 		self.imageR = pygame.transform.flip(self.imageL, 1, 0)
@@ -238,18 +241,30 @@ class Bomber(pygame.sprite.Sprite):
 		"""drops a bomb if there is a target beneath"""
 		if not self.checkForTarget(data): return
 
-		Bomb(data, self.rect.midbottom)
+		if random.randint(0, 5) == 0:
+			SuperBomb(data, self.rect.midbottom)
+		else:
+			Bomb(data, self.rect.midbottom)
+
 		self.timeTillBombPrimed = random.uniform(Bomber.minTimeToDropBomb, Bomber.maxTimeToDropBomb)
 		self.lastBombDropTime = time.time()
 
 
 	def checkForTarget(self, data):
-		"""Checks if there is a building below the plane. CURRENTLY UNUSED"""
+		"""Checks if there is a building below the plane"""
 		self.targetingRect.bottom = data.WINDOWHEIGHT
 		self.targetingRect.centerx = self.rect.centerx
 		for building in data.bomberTargetedEntities:
 			if self.targetingRect.colliderect(building.rect):
 				return True
+
+
+	def isBombed(self, data):
+		"""Called when a superbomb hits the bomber"""
+		self.kill()
+		self.smoke.kill()
+		Explosion(data, self.rect.center, 60)
+		data.shakeScreen(20)
 
 
 
@@ -260,10 +275,11 @@ class Bomb(pygame.sprite.Sprite):
 		pygame.sprite.Sprite.__init__(self)
 		self.add(data.bombs)
 
-		self.baseImage = data.loadImage('assets/enemies/bomb.png')
+		self.baseImage = Bomb.baseImage
 		self.rotation = 0.0
 		self.rect = self.baseImage.get_rect(topleft=topleft)
 		self.yCoord = topleft[1] # float for accuracy
+		self.fallSpeed = Bomb.fallSpeed
 
 		self.smoke = SmokeSpawner(data, self.rect.midtop, 2)
 
@@ -279,10 +295,13 @@ class Bomb(pygame.sprite.Sprite):
 			self.image = pygame.transform.rotate(self.baseImage, self.rotation)
 			self.rotation += random.uniform(-0.6, 0.5)
 		
-		self.yCoord += Bomb.fallSpeed * data.dt
+		self.yCoord += self.fallSpeed * data.dt
 		self.rect.y = self.yCoord
 
-		self.smoke.sourceCoords = [self.rect.centerx - 2, self.rect.top - 2]
+		if self.fallSpeed > 0:
+			self.smoke.sourceCoords = [self.rect.centerx - 2, self.rect.top - 2]
+		elif self.fallSpeed < 0:
+			self.smoke.sourceCoords = [self.rect.centerx - 2, self.rect.bottom - 2]
 
 		data.gameSurf.blit(self.image, self.rect)
 
@@ -295,16 +314,46 @@ class Bomb(pygame.sprite.Sprite):
 			if collided in data.buildings:
 				data.shakeScreen(20)
 				shake = False
-		if collided or self.rect.bottom > data.WINDOWHEIGHT:
+
+			if self in data.superBombs and isinstance(collided, Bullet):
+				# super bombs go back upwards if shot
+				if self.fallSpeed > 0:  # is falling
+					self.fallSpeed = -self.fallSpeed
+					self.baseImage = pygame.transform.rotate(self.baseImage, 180)
+				return
+
+		if collided or self.rect.bottom > data.WINDOWHEIGHT: # collided or touch bottom of screen
 			self.explode(data, shake)
+		elif self.rect.bottom < -20: # out of sight at the top (disappear silently)
+			self.kill()
+			self.smoke.kill()
+
+		if self in data.superBombs:
+			collided = pygame.sprite.spritecollideany(self, data.superbombableEntities)
+			if collided:
+				collided.isBombed(data)
+				self.explode(data, False)
 
 
 	def explode(self, data, shake=True):
+		"""Explode the bomb, if shake=True shake the screen a little"""
 		self.kill()
 		self.smoke.kill()
 		Explosion(data, self.rect.center, 40)
 		if shake:
 			data.shakeScreen(10)
+
+
+
+class SuperBomb(Bomb):
+	"""A massive bomb that can be deflected by bullets and blow up bombers"""
+	fallSpeed = 14
+	def __init__(self, data, topleft):
+		Bomb.__init__(self, data, topleft)
+		self.add(data.superBombs)
+		self.baseImage = SuperBomb.baseImage
+		self.fallSpeed = SuperBomb.fallSpeed
+		self.smoke.intensity = 1
 
 
 

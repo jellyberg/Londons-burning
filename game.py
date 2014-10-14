@@ -2,7 +2,7 @@
 # a game by Adam Binks
 
 import random, time
-from object import Building, Bomber, AAGun
+from object import Building, Bomber, AAGun, Bomb, SuperBomb
 
 class GameHandler:
 	def __init__(self, data):
@@ -11,6 +11,9 @@ class GameHandler:
 		self.lastBomberTime = time.time()
 
 		Bomber(data, random.randint(0, 1), random.randint(50, 300))
+
+		Bomb.baseImage = data.loadImage('assets/enemies/bomb.png')
+		SuperBomb.baseImage = data.loadImage('assets/enemies/superBomb.png')
 
 
 	def update(self, data, dt):
@@ -24,9 +27,9 @@ class GameHandler:
 		data.AAguns.update(data)
 		data.bullets.update(data)
 
-		if time.time() - self.lastBomberTime > self.timeTillNewBomber:
+		if time.time() - self.lastBomberTime > self.timeTillNewBomber or len(data.bombers) == 0:
 			Bomber(data, random.randint(0, 1), random.randint(50, 300))
-			self.timeTillNewBomber = random.randint(3, 7)
+			self.timeTillNewBomber = random.randint(6, 10)
 			self.lastBomberTime = time.time()
 
 		data.bombers.update(data)

@@ -64,6 +64,7 @@ class SmokeSpawner(pygame.sprite.Sprite):
 			self.kill()
 
 
+
 class Explosion(pygame.sprite.Sprite):
 	lifespan = 0.1
 	def __init__(self, data, topleft, intensity):
@@ -89,3 +90,29 @@ class Explosion(pygame.sprite.Sprite):
 		for i in range(self.intensity):
 			Particle(data, random.choice(self.imgs), self.sourceCoords, self.particleLifespan, 
 										 (random.randint(-10, 10), random.randint(-10, 10)), -1)
+
+
+
+# class Shrapnel(pygame.sprite.Sprite):
+# 	"""A hunk of metal that falls to the ground"""
+# 	fallSpeed = 16
+# 	acceleration = 20
+# 	def __init__(self, data, topleft, image):
+# 		pygame.sprite.Sprite.__init__(self)
+# 		self.add(data.particles)
+
+# 		self.image = image
+# 		self.image.set_alpha(200)
+# 		self.rect = self.image.get_rect(topleft = topleft)
+
+# 		self.velocity = 0
+
+
+# 	def update(self, data):
+# 		self.velocity += Shrapnel.acceleration * data.dt
+# 		if self.velocity > Shrapnel.fallSpeed:
+# 			self.velocity = Shrapnel.fallSpeed
+
+# 		self.rect.y += self.velocity * data.dt
+		
+# 		data.screen.blit(self.image, self.rect)

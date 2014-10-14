@@ -54,6 +54,7 @@ class Data:
 		self.destroyableEntities = pygame.sprite.Group() # any objects destroyable by bombs
 		self.bomberTargetedEntities = pygame.sprite.Group()  # any objects that bombers will try and drop bombs on
 		self.bulletproofEntities = pygame.sprite.Group() # bullets bounce straight of these
+		self.superbombableEntities = pygame.sprite.Group() # any objects destroyed by floating super bombs
 
 		self.particles = pygame.sprite.Group()
 		self.particleSpawners = pygame.sprite.Group()
@@ -63,6 +64,7 @@ class Data:
 
 		self.bombers = pygame.sprite.Group()
 		self.bombs = pygame.sprite.Group()
+		self.superBombs = pygame.sprite.Group()
 
 		self.AAguns = pygame.sprite.Group()
 		self.bullets = pygame.sprite.Group()
