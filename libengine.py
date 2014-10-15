@@ -1,6 +1,6 @@
 # 
 # a game by Adam Binks
-import pygame
+import pygame, sound
 pygame.mixer.pre_init(44100, -16, 2, 512)   # use a lower buffersize to reduce sound latency
 
 import input, game, random
@@ -21,6 +21,8 @@ class StateHandler:
 		pygame.mouse.set_cursor(*pygame.cursors.diamond)
 
 		self.gameHandler = game.GameHandler(self.data)
+
+		sound.playMusic('assets/sounds/searching.mp3')   # courtesy of http://ericskiff.com/music/
 
 
 	def update(self):
