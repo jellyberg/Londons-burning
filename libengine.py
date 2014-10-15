@@ -1,9 +1,10 @@
 # 
 # a game by Adam Binks
-import pygame, sound
+import pygame
 pygame.mixer.pre_init(44100, -16, 2, 512)   # use a lower buffersize to reduce sound latency
+pygame.init()
 
-import input, game, random
+import input, game, random, sound, ui
 
 def run():
 	stateHandler = StateHandler()
@@ -11,18 +12,19 @@ def run():
 		stateHandler.update()
 
 
+
 class StateHandler:
 	"""handles menu and game state, runs boilerplate update code"""
 	def __init__(self):
 		self.data = Data()
-		self.data.screen.fill((60, 60, 60))
+		self.data.screen.fill(self.data.grey)
 		pygame.display.set_caption('Blitz Defence')
 
 		pygame.mouse.set_cursor(*pygame.cursors.diamond)
 
 		self.gameHandler = game.GameHandler(self.data)
 
-		sound.playMusic('assets/sounds/searching.mp3')   # courtesy of http://ericskiff.com/music/
+		#sound.playMusic('assets/sounds/searching.mp3')   # courtesy of http://ericskiff.com/music/
 
 
 	def update(self):
@@ -49,6 +51,13 @@ class Data:
 		self.IMAGESCALEUP = 4
 
 		self.screenShakeOffset = [0, 0]
+
+		self.grey = (60, 60, 60)
+		self.white = (250, 250, 250)
+		self.lightgrey = (180, 180, 180)
+		self.yellow = (255, 223, 134)
+
+		self.scoreValues = {'shoot bomb': 20, 'shoot superBomb': 30, 'destroy bomber': 200}
 
 
 	def newGame(self):

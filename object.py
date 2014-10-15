@@ -58,7 +58,9 @@ class AAGun(pygame.sprite.Sprite):
 
 	def update(self, data):
 		if self.state == 'bombed':
-			self.updateFallAnimation(data)
+			fallAnimateDone = self.updateFallAnimation(data)
+			if fallAnimateDone:
+				self.kill()
 
 		elif self.state == 'stable':
 			self.barrelRot = self.getBarrelRotation(data)
@@ -270,6 +272,8 @@ class Bomber(pygame.sprite.Sprite):
 		sound.play('shoot down')
 		pygame.time.wait(50)
 
+		data.score += data.scoreValues['destroy bomber']
+
 
 
 class Bomb(pygame.sprite.Sprite):
@@ -324,8 +328,13 @@ class Bomb(pygame.sprite.Sprite):
 				if self.fallSpeed > 0:  # is falling
 					self.fallSpeed = -self.fallSpeed
 					self.baseImage = pygame.transform.rotate(self.baseImage, 180)
+					
 					sound.play('plup', 0.8)
+					data.score += data.scoreValues['shoot superBomb']
 				return
+
+			elif isinstance(collided, Bullet):
+				data.score += data.scoreValues['shoot bomb']
 
 		if collided or self.rect.bottom > data.WINDOWHEIGHT: # collided or touch bottom of screen
 			self.explode(data, shake)
