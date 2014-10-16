@@ -25,7 +25,7 @@ class StateHandler:
 		self.mainMenu = MainMenu(self.data)
 		self.gameHandler = None
 
-		#sound.playMusic('assets/sounds/searching.mp3')   # courtesy of http://ericskiff.com/music/
+		sound.playMusic('assets/sounds/searching.mp3')   # courtesy of http://ericskiff.com/music/
 
 
 	def update(self):
@@ -55,7 +55,7 @@ class Data:
 		self.FPSClock = pygame.time.Clock()
 		self.FPS = 60
 		self.input = input.Input()
-		sound.muted = True
+		sound.muted = False
 
 		self.IMAGESCALEUP = 4
 
@@ -152,23 +152,50 @@ class MainMenu:
 		textRect.bottomright = (data.WINDOWWIDTH - 10, data.WINDOWHEIGHT - 10)
 		self.surfs.append(textSurf)
 		self.rects.append(textRect)
-		logoSurf = data.loadImage('assets/jellyberg.png')
+		logoSurf = data.loadImage('assets/ui/jellyberg.png')
 		logoRect = logoSurf.get_rect(bottomright = (data.WINDOWWIDTH - 10, textRect.top - 5))
 		self.surfs.append(logoSurf)
 		self.rects.append(logoRect)
 
+		self.musicSurf = {}
+		self.musicSurf[1] = data.loadImage('assets/ui/musicON.png')
+		self.musicSurf[0] = data.loadImage('assets/ui/musicOFF.png')
+		self.musicRect = self.musicSurf[0].get_rect(topright = (data.WINDOWWIDTH - 10, 10))
+		self.musicMuted = False
+
+		self.sfxSurf = {}
+		self.sfxSurf[1] = data.loadImage('assets/ui/sfxON.png')
+		self.sfxSurf[0] = data.loadImage('assets/ui/sfxOFF.png')
+		self.sfxRect = self.sfxSurf[0].get_rect(topright =  (self.musicRect.left - 5, 10))
 
 
 	def update(self, data):
+		data.screen.fill(data.grey)
+
 		for i in range(len(self.surfs)):
 			data.screen.blit(self.surfs[i], self.rects[i])
 
-		# if logo or my name is clicked, go to my itch.io page
-		if data.input.mouseUnpressed == 1 and\
-				 (self.rects[-1].collidepoint(data.input.mousePos) or self.rects[-2].collidepoint(data.input.mousePos)):
-			webbrowser.open('http://jellyberg.itch.io/')
-		elif data.input.unpressedKeys:
+		if data.input.mouseUnpressed == 1:
+			# if logo or my name is clicked, go to my itch.io page
+			if (self.rects[-1].collidepoint(data.input.mousePos) or self.rects[-2].collidepoint(data.input.mousePos)):
+				webbrowser.open('http://jellyberg.itch.io/')
+
+			if self.sfxRect.collidepoint(data.input.mousePos):
+				sound.muted = not sound.muted
+			elif self.musicRect.collidepoint(data.input.mousePos):
+				self.musicMuted = not self.musicMuted
+				if self.musicMuted:
+					sound.pauseMusic()
+				else:
+					sound.resumeMusic()
+
+		data.screen.blit(self.sfxSurf[not sound.muted], self.sfxRect)
+		data.screen.blit(self.musicSurf[not self.musicMuted], self.musicRect)
+
+
+		if data.input.unpressedKeys:  # start the game
 			return 'done'
+
 
 
 if __name__ == '__main__':
