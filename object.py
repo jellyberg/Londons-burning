@@ -379,7 +379,7 @@ class Bullet(pygame.sprite.Sprite):
 		self.add(data.bullets)
 		self.add(data.destroyableEntities)  # explode bombs it comes into contact with
 
-		self.image = data.loadImage('assets/defences/bullet.png')
+		self.image = Bullet.image
 		self.rect = self.image.get_rect(center=pos)
 		self.coords = [float(self.rect.centerx), float(self.rect.centery)]
 		self.angle = self.get_angle(pos, aimAt)
@@ -441,6 +441,8 @@ class Spotlight(pygame.sprite.Sprite):
 		self.image = Spotlight.baseImage
 		self.sourceCoords = sourceCoords
 
+		self.standRect = Spotlight.standImage.get_rect(midbottom = sourceCoords)
+
 
 	def update(self, data):
 		self.rotation += Spotlight.rotateSpeed * self.rotationDirection * data.dt
@@ -458,3 +460,4 @@ class Spotlight(pygame.sprite.Sprite):
 			self.rect.bottomleft = (self.sourceCoords[0] - 20, self.sourceCoords[1])
 
 		data.gameSurf.blit(self.image, self.rect)
+		data.gameSurf.blit(Spotlight.standImage, self.standRect)

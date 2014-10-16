@@ -4,7 +4,7 @@ import pygame
 pygame.mixer.pre_init(44100, -16, 2, 512)   # use a lower buffersize to reduce sound latency
 pygame.init()
 
-import input, game, random, sound, ui
+import input, game, random, sound, ui, webbrowser
 
 def run():
 	stateHandler = StateHandler()
@@ -22,7 +22,8 @@ class StateHandler:
 
 		pygame.mouse.set_cursor(*pygame.cursors.diamond)
 
-		self.gameHandler = game.GameHandler(self.data)
+		self.mainMenu = MainMenu(self.data)
+		self.gameHandler = None
 
 		#sound.playMusic('assets/sounds/searching.mp3')   # courtesy of http://ericskiff.com/music/
 
@@ -33,7 +34,14 @@ class StateHandler:
 		pygame.display.set_caption('Blitz Defence  FPS: %s' %(int(self.data.FPSClock.get_fps())))
 
 		# update game/menu objs
-		self.gameHandler.update(self.data, self.data.dt)
+		if self.gameHandler:
+			self.gameHandler.update(self.data, self.data.dt)
+		
+		else:
+			done = self.mainMenu.update(self.data)
+			if done:
+				self.gameHandler = game.GameHandler(self.data)
+
 
 		pygame.display.update()
 
@@ -47,6 +55,7 @@ class Data:
 		self.FPSClock = pygame.time.Clock()
 		self.FPS = 60
 		self.input = input.Input()
+		sound.muted = True
 
 		self.IMAGESCALEUP = 4
 
@@ -111,6 +120,55 @@ class Data:
 
 	def saveGame(self):
 		pass
+
+
+
+class MainMenu:
+	def __init__(self, data):
+		self.surfs = []
+		self.rects = []
+
+		surf, rect = ui.genText('Londons Burning', (0, 0), data.yellow, ui.MEGAFONT)
+		rect.midbottom = (data.WINDOWWIDTH / 2, data.WINDOWHEIGHT / 2 - 50)
+		self.surfs.append(surf)
+		self.rects.append(rect)
+
+		texts = ['Defend London from the bombers',
+				 'Click to shoot the bombs out of the air',
+				 'You cant directly shoot the bombers',
+				 'Shoot the big bombs to ricochet them back',
+				 'and blow up the bombers!',
+				 'Press any key to continue']
+
+		y = self.rects[0].bottom + 50
+		for text in texts:
+			surf, rect = ui.genText(text, (0, 0), data.lightgrey, ui.BASICFONT)
+			rect.midbottom = (data.WINDOWWIDTH / 2, y)
+			self.surfs.append(surf)
+			self.rects.append(rect)
+			y += rect.height + 20
+
+		textSurf, textRect = ui.genText('created by adam binks', (0, 0), data.yellow, ui.BASICFONT)
+		textRect.bottomright = (data.WINDOWWIDTH - 10, data.WINDOWHEIGHT - 10)
+		self.surfs.append(textSurf)
+		self.rects.append(textRect)
+		logoSurf = data.loadImage('assets/jellyberg.png')
+		logoRect = logoSurf.get_rect(bottomright = (data.WINDOWWIDTH - 10, textRect.top - 5))
+		self.surfs.append(logoSurf)
+		self.rects.append(logoRect)
+
+
+
+	def update(self, data):
+		for i in range(len(self.surfs)):
+			data.screen.blit(self.surfs[i], self.rects[i])
+
+		# if logo or my name is clicked, go to my itch.io page
+		if data.input.mouseUnpressed == 1 and\
+				 (self.rects[-1].collidepoint(data.input.mousePos) or self.rects[-2].collidepoint(data.input.mousePos)):
+			webbrowser.open('http://jellyberg.itch.io/')
+		elif data.input.unpressedKeys:
+			return 'done'
 
 
 if __name__ == '__main__':

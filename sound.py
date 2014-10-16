@@ -11,6 +11,8 @@ for filename in ['explosion1', 'explosion2', 'explosion3', 'explosion4',
 
 def play(sound, volume=0.8, varyVolume=True, loops=0):
 	"""Plays the given sound"""
+	if muted: return
+	
 	if varyVolume:
 		volume -= random.uniform(0.0, 0.2)
 		if volume < 0.1: volume == 0.1

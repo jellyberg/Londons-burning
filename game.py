@@ -2,18 +2,24 @@
 # a game by Adam Binks
 
 import ui, random, time
-from object import Building, Bomber, AAGun, Bomb, SuperBomb, Spotlight
+from object import Building, Bomber, AAGun, Bomb, SuperBomb, Bullet, Spotlight
 
 class GameHandler:
 	def __init__(self, data):
 		Bomb.baseImage = data.loadImage('assets/enemies/bomb.png')
 		SuperBomb.baseImage = data.loadImage('assets/enemies/superBomb.png')
+		Bullet.image = data.loadImage('assets/defences/bullet.png')
 		Spotlight.baseImage = data.loadImage('assets/defences/spotlight.png')
+		Spotlight.standImage = data.loadImage('assets/defences/spotlightStand.png')
 
 		self.newGame(data)
 
 		self.lastEndScore = 0 # score achieved in the last game
 		self.highScore = 0 # best score yet
+
+		self.minBomberInterval = 11.0
+		self.maxBomberInterval = 15.0
+		self.learningCurve = 0.2  # how much the spawn rate of bombers increases per bomber spawn
 
 
 	def update(self, data, dt):
@@ -30,11 +36,14 @@ class GameHandler:
 			data.AAguns.update(data)
 		data.bullets.update(data)
 
-		if time.time() - self.lastBomberTime > self.timeTillNewBomber or len(data.bombers) < 100:
+		if time.time() - self.lastBomberTime > self.timeTillNewBomber or len(data.bombers) == 0:
 			Bomber(data, random.randint(0, 1), random.randint(50, 250))
-			self.timeTillNewBomber = random.randint(10, 14)
+			self.timeTillNewBomber = random.uniform(self.minBomberInterval, self.maxBomberInterval)
 			self.lastBomberTime = time.time()
 
+			if self.minBomberInterval > 4:
+				self.minBomberInterval -= self.learningCurve
+				self.maxBomberInterval -= self.learningCurve
 		data.bombers.update(data)
 		data.bombs.update(data)
 
@@ -70,7 +79,7 @@ class GameHandler:
 		Spotlight(data, (200, data.WINDOWHEIGHT), 50)
 		Spotlight(data, (400, data.WINDOWHEIGHT), 130)
 
-		self.timeTillNewBomber = random.randint(15, 20) # longer time till second bomber to get into the swing of things
+		self.timeTillNewBomber = random.randint(14, 16) # longer time till second bomber to get into the swing of things
 		self.lastBomberTime = time.time()
 		Bomber(data, random.randint(0, 1), random.randint(50, 300))
 
@@ -81,7 +90,7 @@ class GameHandler:
 		x = 4
 		while x < data.WINDOWWIDTH:
 			img = random.choice(buildingImgs)
-			if x > int(data.WINDOWWIDTH / 2) - 32 and not aaGunIsBuilt:  # build a single AA Gun roughly halfway across the screen
+			if x > int(data.WINDOWWIDTH / 2) - 32 and not aaGunIsBuilt: # build a single AA Gun roughly halfway across the screen
 				AAGun(data, x)
 				x += 64
 				aaGunIsBuilt = True
