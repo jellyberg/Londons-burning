@@ -1,4 +1,4 @@
-# 
+# London's burning
 # a game by Adam Binks
 
 import pygame, time, random, sound

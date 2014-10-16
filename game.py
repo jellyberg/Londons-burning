@@ -1,4 +1,4 @@
-#
+# London's burning
 # a game by Adam Binks
 
 import ui, random, time
@@ -17,9 +17,11 @@ class GameHandler:
 		self.lastEndScore = 0 # score achieved in the last game
 		self.highScore = 0 # best score yet
 
-		self.minBomberInterval = 11.0
-		self.maxBomberInterval = 15.0
-		self.learningCurve = 0.2  # how much the spawn rate of bombers increases per bomber spawn
+		# starting difficulty values
+		self.minBomberInterval = 13.0
+		self.maxBomberInterval = 18.0
+		self.learningCurve = 0.5  # how much the spawn rate of bombers increases per bomber spawn
+		self.lowestEverBomberSpawnInterval = 1 # min bomber spawn interval never goes below this
 
 
 	def update(self, data, dt):
@@ -41,7 +43,7 @@ class GameHandler:
 			self.timeTillNewBomber = random.uniform(self.minBomberInterval, self.maxBomberInterval)
 			self.lastBomberTime = time.time()
 
-			if self.minBomberInterval > 4:
+			if self.minBomberInterval > self.lowestEverBomberSpawnInterval:
 				self.minBomberInterval -= self.learningCurve
 				self.maxBomberInterval -= self.learningCurve
 		data.bombers.update(data)
