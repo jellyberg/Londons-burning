@@ -6,14 +6,15 @@ from pygame.locals import *
 
 class Input:
     """A class to handle input accessible by all other classes"""
+    constrainMouseMargin = 30
     def __init__(self):
         self.pressedKeys = []
         self.mousePressed = False
         self.mouseUnpressed = False
-        self.mousePos = (0, 0)
+        self.mousePos = [0, 0]
         
 
-    def get(self):
+    def get(self, constrainMouse=False):
         """Update variables - mouse position and click state, and pressed keys"""
         self.mouseUnpressed = False
         self.unpressedKeys = []
@@ -30,7 +31,7 @@ class Input:
                         self.pressedKeys.remove(key)
                     self.unpressedKeys.append(key)
             elif event.type == MOUSEMOTION:
-                self.mousePos = event.pos
+                self.mousePos = list(event.pos)
             elif event.type == MOUSEBUTTONDOWN:
                 self.mousePressed = event.button
                 self.mouseUnpressed = False
@@ -39,8 +40,21 @@ class Input:
                 self.mouseUnpressed = event.button
             elif event.type == QUIT:
                 pygame.event.post(event)
-        
+
+        if constrainMouse:
+            self.constrainMouse()
         self.checkForQuit()
+
+
+    def constrainMouse(self):
+        """Set the cursor position to a little inside the edge of the window if it goes outside it"""
+        for axis in [0, 1]:
+            if self.mousePos[axis] < Input.constrainMouseMargin:
+                self.mousePos[axis] = Input.constrainMouseMargin
+            if self.mousePos[axis] > Input.winSize[axis] - Input.constrainMouseMargin:
+                self.mousePos[axis] = Input.winSize[axis] - Input.constrainMouseMargin
+        pygame.mouse.set_pos(self.mousePos)
+
 
 
     def checkForQuit(self):

@@ -30,9 +30,8 @@ class StateHandler:
 
 
 	def update(self):
-		self.data.input.get()
+		self.data.input.get((self.gameHandler is not None and not self.gameHandler.gameOver))
 		self.data.dt = self.data.FPSClock.tick(self.data.FPS) / 100.0
-		pygame.display.set_caption('London\'s Burning!  FPS: %s' %(int(self.data.FPSClock.get_fps())))
 
 		# update game/menu objs
 		if self.gameHandler:
@@ -52,6 +51,8 @@ class Data:
 	"""stores variables to be accessed in many parts of the game"""
 	def __init__(self):
 		self.WINDOWWIDTH, self.WINDOWHEIGHT = (600, 800)
+		input.Input.winSize = [self.WINDOWWIDTH, self.WINDOWHEIGHT]
+
 		self.screen = pygame.display.set_mode((self.WINDOWWIDTH, self.WINDOWHEIGHT))
 		self.FPSClock = pygame.time.Clock()
 		self.FPS = 60
