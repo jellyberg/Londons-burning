@@ -12,8 +12,7 @@ class Particle(pygame.sprite.Sprite):
 		self.add(data.particles)
 
 		self.image = image
-		self.rect = image.get_rect()
-		self.rect.topleft = topleft
+		self.rect = image.get_rect(topleft=topleft)
 		self.coords = list(topleft)
 
 		self.velocity = list(velocity)

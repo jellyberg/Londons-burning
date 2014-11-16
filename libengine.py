@@ -30,7 +30,7 @@ class StateHandler:
 
 
 	def update(self):
-		self.data.input.get((self.gameHandler is not None and not self.gameHandler.gameOver))
+		self.data.input.get(self.data, (self.gameHandler is not None and not self.gameHandler.gameOver))
 		self.data.dt = self.data.FPSClock.tick(self.data.FPS) / 100.0
 
 		# update game/menu objs
